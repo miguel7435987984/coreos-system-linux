@@ -1,0 +1,348 @@
+#!/usr/bin/env python3
+"""
+Prius Terminal - Official Terminal Emulator for Geminux OS
+Built with GTK 3, VTE and custom Geminux branding.
+"""
+
+import sys
+import os
+import urllib.parse
+import gi
+
+gi.require_version('Gtk', '3.0')
+gi.require_version('Vte', '2.91')
+gi.require_version('Gdk', '3.0')
+from gi.repository import Gtk, Vte, GLib, Gdk, Pango
+
+GEMINUX_ACCENT = "#00d2ff"
+GEMINUX_BG = "#0f141c"
+GEMINUX_FG = "#e6edf3"
+
+class PriusTab(Gtk.Box):
+    def __init__(self, parent_window):
+        super().__init__(orientation=Gtk.Orientation.VERTICAL)
+        self.parent_window = parent_window
+
+        # Terminal widget
+        self.terminal = Vte.Terminal()
+
+        # Color configuration
+        bg_color = Gdk.RGBA()
+        bg_color.parse(GEMINUX_BG)
+        fg_color = Gdk.RGBA()
+        fg_color.parse(GEMINUX_FG)
+
+        palette = [
+            "#0f141c", "#ff5555", "#50fa7b", "#f1fa8c",
+            "#00d2ff", "#bd93f9", "#8be9fd", "#bfbfbf",
+            "#4d5b86", "#ff6e6e", "#69ff94", "#ffffa5",
+            "#38bdf8", "#d6acff", "#a4ffff", "#ffffff"
+        ]
+        palette_rgba = []
+        for c in palette:
+            rgba = Gdk.RGBA()
+            rgba.parse(c)
+            palette_rgba.append(rgba)
+
+        self.terminal.set_colors(fg_color, bg_color, palette_rgba)
+        self.terminal.set_font(Pango.FontDescription("Monospace 11"))
+        self.terminal.set_cursor_blink_mode(Vte.CursorBlinkMode.ON)
+        self.terminal.set_cursor_shape(Vte.CursorShape.BLOCK)
+        self.terminal.set_scrollback_lines(10000)
+        self.terminal.set_mouse_autohide(True)
+        self.terminal.set_audible_bell(False)
+
+        # Connect signals
+        self.terminal.connect("child-exited", self.on_child_exited)
+        self.terminal.connect("window-title-changed", self.on_title_changed)
+        self.terminal.connect("button-press-event", self.on_button_press)
+
+        # Drag and Drop support
+        self.terminal.drag_dest_set(
+            Gtk.DestDefaults.ALL,
+            [],
+            Gdk.DragAction.COPY | Gdk.DragAction.DEFAULT
+        )
+        self.terminal.drag_dest_add_uri_targets()
+        self.terminal.drag_dest_add_text_targets()
+        self.terminal.connect("drag-data-received", self.on_drag_data_received)
+
+        # Scrolled window
+        scrolled = Gtk.ScrolledWindow()
+        scrolled.set_policy(Gtk.PolicyType.AUTOMATIC, Gtk.PolicyType.AUTOMATIC)
+        scrolled.add(self.terminal)
+
+        self.pack_start(scrolled, True, True, 0)
+
+        # Spawn default shell
+        shell = os.environ.get("SHELL", "/bin/bash")
+        self.terminal.spawn_async(
+            Vte.PtyFlags.DEFAULT,
+            os.environ.get("HOME", "/"),
+            [shell],
+            ["TERM=xterm-256color", "PRIUS_TERMINAL=1", "GEMINUX_OS=1"],
+            GLib.SpawnFlags.DO_NOT_REAP_CHILD,
+            None,
+            None,
+            -1,
+            None,
+            None
+        )
+
+    def on_child_exited(self, terminal, status):
+        self.parent_window.close_tab(self)
+
+    def on_title_changed(self, terminal):
+        title = terminal.get_window_title() or "prius"
+        self.parent_window.update_tab_title(self, title)
+
+    def on_button_press(self, terminal, event):
+        if event.button == 3:  # Right click
+            menu = Gtk.Menu()
+
+            # Copy
+            copy_item = Gtk.MenuItem(label="Copiar (Ctrl+Shift+C)")
+            copy_item.connect("activate", lambda m: self.terminal.copy_clipboard_format(Vte.Format.TEXT))
+            copy_item.set_sensitive(self.terminal.get_has_selection())
+            menu.append(copy_item)
+
+            # Paste
+            paste_item = Gtk.MenuItem(label="Colar (Ctrl+Shift+V)")
+            paste_item.connect("activate", lambda m: self.terminal.paste_clipboard())
+            menu.append(paste_item)
+
+            menu.append(Gtk.SeparatorMenuItem())
+
+            # Select All
+            select_all_item = Gtk.MenuItem(label="Selecionar Tudo")
+            select_all_item.connect("activate", lambda m: self.terminal.select_all())
+            menu.append(select_all_item)
+
+            # Clear Scrollback
+            clear_item = Gtk.MenuItem(label="Limpar Terminal")
+            clear_item.connect("activate", lambda m: self.terminal.reset(True, True))
+            menu.append(clear_item)
+
+            menu.append(Gtk.SeparatorMenuItem())
+
+            # New Tab
+            new_tab_item = Gtk.MenuItem(label="Nova Aba (Ctrl+Shift+T)")
+            new_tab_item.connect("activate", lambda m: self.parent_window.add_new_tab())
+            menu.append(new_tab_item)
+
+            # Close Tab
+            close_tab_item = Gtk.MenuItem(label="Fechar Aba (Ctrl+Shift+W)")
+            close_tab_item.connect("activate", lambda m: self.parent_window.close_tab(self))
+            menu.append(close_tab_item)
+
+            menu.show_all()
+            menu.popup_at_pointer(event)
+            return True
+        return False
+
+    def on_drag_data_received(self, widget, drag_context, x, y, data, info, time):
+        uris = data.get_uris()
+        if uris:
+            paths = []
+            for uri in uris:
+                try:
+                    filename, _ = GLib.filename_from_uri(uri)
+                    paths.append(GLib.shell_quote(filename))
+                except Exception:
+                    if uri.startswith("file://"):
+                        unquoted = urllib.parse.unquote(uri[7:])
+                        paths.append(GLib.shell_quote(unquoted))
+                    else:
+                        paths.append(GLib.shell_quote(uri))
+            if paths:
+                text = " ".join(paths) + " "
+                self.terminal.feed_child(text.encode("utf-8"))
+            Gtk.drag_finish(drag_context, True, False, time)
+            return
+
+        text = data.get_text()
+        if text:
+            self.terminal.feed_child(text.encode("utf-8"))
+            Gtk.drag_finish(drag_context, True, False, time)
+            return
+
+        Gtk.drag_finish(drag_context, False, False, time)
+
+
+class PriusWindow(Gtk.Window):
+    def __init__(self):
+        super().__init__(title="Prius Terminal - Geminux")
+        self.set_default_size(900, 560)
+        self.set_position(Gtk.WindowPosition.CENTER)
+
+        # Custom headerbar
+        headerbar = Gtk.HeaderBar()
+        headerbar.set_show_close_button(True)
+        headerbar.set_title("Prius Terminal")
+        headerbar.set_subtitle("Geminux System Linux")
+        self.set_titlebar(headerbar)
+
+        # New tab button
+        new_tab_btn = Gtk.Button.new_from_icon_name("tab-new-symbolic", Gtk.IconSize.BUTTON)
+        new_tab_btn.set_tooltip_text("New Tab (Ctrl+Shift+T)")
+        new_tab_btn.connect("clicked", lambda b: self.add_new_tab())
+        headerbar.pack_start(new_tab_btn)
+
+        # Settings / Info button
+        info_btn = Gtk.Button.new_from_icon_name("help-about-symbolic", Gtk.IconSize.BUTTON)
+        info_btn.set_tooltip_text("About Prius & Geminux")
+        info_btn.connect("clicked", self.show_about_dialog)
+        headerbar.pack_end(info_btn)
+
+        # Main notebook (tabs)
+        self.notebook = Gtk.Notebook()
+        self.notebook.set_scrollable(True)
+        self.notebook.set_show_border(False)
+        self.notebook.connect("page-removed", self.on_page_removed)
+        self.add(self.notebook)
+
+        # Key bindings
+        self.connect("key-press-event", self.on_key_press)
+
+        # CSS Styling
+        self.load_styles()
+
+        # Add initial tab
+        self.add_new_tab()
+
+    def load_styles(self):
+        css_provider = Gtk.CssProvider()
+        css = b"""
+            window {
+                background-color: #0f141c;
+            }
+            headerbar {
+                background: linear-gradient(to bottom, #192231, #0f141c);
+                border-bottom: 1px solid #23354f;
+                color: #e6edf3;
+            }
+            notebook {
+                background-color: #0f141c;
+                border: none;
+            }
+            notebook tab {
+                background-color: #141b26;
+                color: #8b949e;
+                padding: 4px 12px;
+                border: 1px solid #1f2a3a;
+                border-bottom: none;
+                border-radius: 6px 6px 0 0;
+                margin-right: 2px;
+            }
+            notebook tab:checked {
+                background-color: #0f141c;
+                color: #00d2ff;
+                border-top: 2px solid #00d2ff;
+            }
+            notebook tab button {
+                padding: 0;
+                min-height: 16px;
+                min-width: 16px;
+            }
+        """
+        css_provider.load_from_data(css)
+        Gtk.StyleContext.add_provider_for_screen(
+            Gdk.Screen.get_default(),
+            css_provider,
+            Gtk.STYLE_PROVIDER_PRIORITY_APPLICATION
+        )
+
+    def add_new_tab(self):
+        tab = PriusTab(self)
+
+        # Tab Label Box
+        tab_box = Gtk.Box(orientation=Gtk.Orientation.HORIZONTAL, spacing=6)
+        label = Gtk.Label(label="prius")
+        close_btn = Gtk.Button.new_from_icon_name("window-close-symbolic", Gtk.IconSize.MENU)
+        close_btn.set_relief(Gtk.ReliefStyle.NONE)
+        close_btn.connect("clicked", lambda b: self.close_tab(tab))
+
+        tab_box.pack_start(label, True, True, 0)
+        tab_box.pack_end(close_btn, False, False, 0)
+        tab_box.show_all()
+
+        page_num = self.notebook.append_page(tab, tab_box)
+        self.notebook.set_tab_reorderable(tab, True)
+        self.notebook.show_all()
+        self.notebook.set_current_page(page_num)
+        tab.terminal.grab_focus()
+
+    def update_tab_title(self, tab, title):
+        page_num = self.notebook.page_num(tab)
+        if page_num != -1:
+            tab_widget = self.notebook.get_tab_label(tab)
+            if isinstance(tab_widget, Gtk.Box):
+                label = tab_widget.get_children()[0]
+                if len(title) > 20:
+                    title = title[:17] + "..."
+                label.set_text(title)
+
+    def close_tab(self, tab):
+        page_num = self.notebook.page_num(tab)
+        if page_num != -1:
+            self.notebook.remove_page(page_num)
+        if self.notebook.get_n_pages() == 0:
+            self.destroy()
+
+    def on_page_removed(self, notebook, child, page_num):
+        if notebook.get_n_pages() == 0:
+            self.destroy()
+
+    def on_key_press(self, widget, event):
+        state = event.state & Gtk.accelerator_get_default_mod_mask()
+        ctrl_shift = (Gdk.ModifierType.CONTROL_MASK | Gdk.ModifierType.SHIFT_MASK)
+
+        if state == ctrl_shift:
+            if event.keyval == Gdk.KEY_T or event.keyval == Gdk.KEY_t:
+                self.add_new_tab()
+                return True
+            elif event.keyval == Gdk.KEY_W or event.keyval == Gdk.KEY_w:
+                current_page = self.notebook.get_current_page()
+                if current_page != -1:
+                    tab = self.notebook.get_nth_page(current_page)
+                    self.close_tab(tab)
+                return True
+            elif event.keyval == Gdk.KEY_C or event.keyval == Gdk.KEY_c:
+                current_page = self.notebook.get_current_page()
+                if current_page != -1:
+                    tab = self.notebook.get_nth_page(current_page)
+                    tab.terminal.copy_clipboard_format(Vte.Format.TEXT)
+                return True
+            elif event.keyval == Gdk.KEY_V or event.keyval == Gdk.KEY_v:
+                current_page = self.notebook.get_current_page()
+                if current_page != -1:
+                    tab = self.notebook.get_nth_page(current_page)
+                    tab.terminal.paste_clipboard()
+                return True
+        return False
+
+    def show_about_dialog(self, button):
+        about = Gtk.AboutDialog()
+        about.set_transient_for(self)
+        about.set_program_name("Prius Terminal")
+        about.set_version("1.0.0")
+        about.set_comments("Official fast and modern terminal for Geminux System Linux")
+        about.set_website("https://github.com/miguel7435987984/geminux")
+        about.set_website_label("Repositório Oficial Geminux OS")
+        about.set_authors(["Geminux OS Team"])
+        about.set_logo_icon_name("prius-terminal")
+        about.run()
+        about.destroy()
+
+def main():
+    GLib.set_prgname("prius-terminal")
+    GLib.set_application_name("Prius Terminal")
+    Gtk.Window.set_default_icon_name("prius-terminal")
+    app = PriusWindow()
+    app.set_wmclass("prius-terminal", "prius-terminal")
+    app.connect("destroy", Gtk.main_quit)
+    app.show_all()
+    Gtk.main()
+
+if __name__ == "__main__":
+    main()

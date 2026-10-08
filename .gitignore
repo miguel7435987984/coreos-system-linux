@@ -1,0 +1,18 @@
+# Build workspace e imagens temporárias
+build-workspace/
+rootfs/
+image/
+
+# Imagens ISO e discos virtuais
+*.iso
+*.qcow2
+*.vmdk
+*.img
+
+# Python cache
+__pycache__/
+*.py[cod]
+*$py.class
+
+# Logs
+*.log

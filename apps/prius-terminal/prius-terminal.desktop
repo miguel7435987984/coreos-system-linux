@@ -1,0 +1,20 @@
+[Desktop Entry]
+Name=Prius Terminal
+Comment=Official Terminal Emulator for Geminux OS
+Exec=/usr/local/bin/prius
+Icon=prius-terminal
+Terminal=false
+Type=Application
+Categories=System;TerminalEmulator;Utility;
+Keywords=shell;prompt;command;commandline;cmd;prius;geminux;
+StartupNotify=true
+StartupWMClass=prius-terminal
+Actions=NewTab;NewWindow;
+
+[Desktop Action NewTab]
+Name=New Tab
+Exec=/usr/local/bin/prius
+
+[Desktop Action NewWindow]
+Name=New Window
+Exec=/usr/local/bin/prius

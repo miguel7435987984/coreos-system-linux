@@ -1,0 +1,77 @@
+name: Build CoreOS system Linux ISO
+
+on:
+  workflow_dispatch:
+  push:
+    branches:
+      - main
+
+jobs:
+  build-coreos-iso:
+    name: Build CoreOS Live ISO (Ubuntu 24.04 LTS Noble)
+    runs-on: ubuntu-24.04
+    timeout-minutes: 180
+    permissions:
+      contents: write
+
+    steps:
+      - name: Checkout Repository
+        uses: actions/checkout@v4
+
+      - name: Free Disk Space on Runner
+        run: |
+          sudo rm -rf /usr/share/dotnet
+          sudo rm -rf /opt/ghc
+          sudo rm -rf "/usr/local/share/boost"
+          sudo rm -rf "$AGENT_TOOLSDIRECTORY"
+          df -h
+
+      - name: Install Build Dependencies
+        run: |
+          sudo apt-get update
+          sudo apt-get install -y ubuntu-keyring xorriso squashfs-tools grub-pc-bin grub-efi-amd64-bin mtools dosfstools wget distro-info
+          wget -q "http://archive.ubuntu.com/ubuntu/pool/main/d/debootstrap/debootstrap_1.0.144ubuntu1_all.deb" -O /tmp/debootstrap.deb
+          sudo dpkg -i /tmp/debootstrap.deb
+          rm -f /tmp/debootstrap.deb
+
+      - name: Prepare Scripts Permissions
+        run: |
+          chmod +x build/build-iso.sh
+          chmod +x build/customize.sh
+          chmod +x apps/prius-terminal/install.sh
+          chmod +x apps/prius-terminal/prius
+
+      - name: Build CoreOS ISO
+        run: |
+          sudo ./build/build-iso.sh
+
+      - name: Upload CoreOS ISO Artifact
+        uses: actions/upload-artifact@v4
+        with:
+          name: coreos-24.04-amd64-iso
+          path: coreos-24.04-amd64.iso
+          retention-days: 14
+
+      - name: Create CoreOS GitHub Release
+        uses: softprops/action-gh-release@v2
+        if: github.ref == 'refs/heads/main' || github.event_name == 'workflow_dispatch'
+        with:
+          files: coreos-24.04-amd64.iso
+          tag_name: v1.0
+          name: CoreOS system Linux 1.0 (Ubuntu 24.04 LTS Noble)
+          make_latest: true
+          body: |
+            ## 🚀 CoreOS system Linux 1.0 (Ubuntu 24.04 LTS Noble Numbat)
+            Distribuição Linux imutável e minimalista voltada para containers Docker, baixo consumo de RAM e estabilidade.
+
+            ### 💎 Recursos Desta Edição:
+            - **Base:** Ubuntu 24.04 LTS (Noble Numbat).
+            - **Docker Nativo:** Docker CE, containerd e docker-compose integrados de fábrica.
+            - **Interface Gráfica Ultra-Leve:** Openbox com Prius Terminal nativo (consumo em repouso: ~200MB de RAM).
+            - **Proteção Anti-Crash (Anti-OOM):** `systemd-oomd` desativado, evitando terminação abrupta de processos por pressão de memória.
+            - **zram-tools Ativado:** 50% de swap em memória compactada ultra-rápida LZ4.
+            - **Novo Boot Splash Plymouth:** Logotipo oficial CoreOS e novo spinner dinâmico neon com 60 frames fluídos.
+            - **Wallpaper Wine Edition:** Tema visual minimalista e elegante integrado.
+            - **Drag and Drop:** Arraste e solte arquivos e diretórios diretamente para o Prius Terminal.
+        env:
+          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
