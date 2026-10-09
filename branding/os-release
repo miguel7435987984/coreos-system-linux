@@ -1,0 +1,12 @@
+NAME="CoreOS system Linux"
+VERSION="1.0 (Noble Numbat - Wine Edition)"
+ID=coreos
+ID_LIKE="ubuntu debian"
+PRETTY_NAME="CoreOS system Linux 1.0 (Wine Edition)"
+VERSION_ID="1.0"
+HOME_URL="https://github.com/miguel7435987984/coreos-system-linux"
+SUPPORT_URL="https://github.com/miguel7435987984/coreos-system-linux"
+BUG_REPORT_URL="https://github.com/miguel7435987984/coreos-system-linux/issues"
+PRIVACY_POLICY_URL="https://github.com/miguel7435987984/coreos-system-linux"
+UBUNTU_CODENAME=noble
+LOGO=coreos

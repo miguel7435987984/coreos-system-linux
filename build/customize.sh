@@ -24,6 +24,23 @@ fi
 ln -sf /usr/share/zoneinfo/America/Sao_Paulo /etc/localtime
 echo "America/Sao_Paulo" > /etc/timezone
 
+# 1.1 Branding do Sistema (CoreOS Wine Edition - os-release e issue)
+if [ -f /tmp/coreos-build/branding/os-release ]; then
+    mkdir -p /etc /usr/lib
+    if [ -x "$(command -v dpkg-divert)" ]; then
+        dpkg-divert --package coreos-branding --divert /usr/lib/os-release.ubuntu --rename /usr/lib/os-release || true
+        dpkg-divert --package coreos-branding --divert /etc/os-release.ubuntu --rename /etc/os-release || true
+    fi
+    cp /tmp/coreos-build/branding/os-release /usr/lib/os-release
+    cp /tmp/coreos-build/branding/os-release /etc/os-release
+fi
+
+cat << 'EOF_ISSUE' > /etc/issue
+CoreOS system Linux 1.0 (Wine Edition) \n \l
+
+EOF_ISSUE
+cp /etc/issue /etc/issue.net
+
 mkdir -p /usr/sbin
 cat << 'EOF' > /usr/sbin/install-keymap
 #!/bin/sh
@@ -129,6 +146,24 @@ EOF_XFCE_UI
 # Prius Terminal como emulador de terminal padrão do sistema
 update-alternatives --install /usr/bin/x-terminal-emulator x-terminal-emulator /usr/local/bin/prius 100 || true
 update-alternatives --set x-terminal-emulator /usr/local/bin/prius || true
+
+# 7.1 Configuração do Fastfetch (Wine Edition)
+mkdir -p /etc/fastfetch
+if [ -d /tmp/coreos-build/config/fastfetch ]; then
+    cp -r /tmp/coreos-build/config/fastfetch/* /etc/fastfetch/ || true
+fi
+
+cat << 'EOF_BASH' >> /etc/bash.bashrc
+
+# CoreOS Fastfetch Wine Edition
+alias fastfetch='fastfetch -c /etc/fastfetch/config.jsonc'
+alias neofetch='fastfetch -c /etc/fastfetch/config.jsonc'
+alias coreos-info='fastfetch -c /etc/fastfetch/config.jsonc'
+
+if [ -t 1 ] && [ -x /usr/bin/fastfetch ]; then
+    fastfetch -c /etc/fastfetch/config.jsonc
+fi
+EOF_BASH
 
 # Configura auto-início do VBoxClient no XFCE (Clipboard compartilhado e redimensionamento automático)
 mkdir -p /etc/xdg/autostart

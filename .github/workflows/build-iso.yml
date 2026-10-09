@@ -67,7 +67,8 @@ jobs:
             ### 💎 Recursos Desta Edição:
             - **Base:** Ubuntu 24.04 LTS (Noble Numbat).
             - **Interface Gráfica XFCE4:** Desktop completo, rápido e estável com LightDM autologin.
-            - **Prius Terminal:** Terminal padrão do sistema com suporte a Drag and Drop.
+            - **Prius Terminal & Fastfetch:** Terminal padrão com Drag and Drop e Fastfetch temático Wine Edition integrado.
+            - **Identidade Própria:** Sistema com os-release oficial CoreOS (não exibe Ubuntu no terminal).
             - **Proteção Anti-Crash (Anti-OOM):** `systemd-oomd` desativado, evitando que apps e processos sejam mortos por pressão de RAM.
             - **zram-tools Ativado:** 50% de swap em memória compactada ultra-rápida LZ4.
             - **Boot Splash Plymouth Oficial:** Logotipo CoreOS e novo spinner dinâmico neon com 60 frames fluídos.
