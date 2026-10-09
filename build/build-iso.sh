@@ -173,13 +173,13 @@ fi
 
 menuentry "Experimentar ou Instalar o CoreOS system Linux (XFCE4 + Prius Terminal)" {
     set gfxpayload=keep
-    linux /casper/vmlinuz boot=casper username=coreos user-fullname="CoreOS Linux" hostname=coreos quiet splash ---
+    linux /casper/vmlinuz boot=casper username=coreos user-fullname="CoreOS Linux" hostname=coreos locales=pt_BR.UTF-8 keyboard-configuration/layoutcode=br console-setup/layoutcode=br quiet splash ---
     initrd /casper/initrd
 }
 
 menuentry "CoreOS system Linux (Modo Seguro / Safe Graphics)" {
     set gfxpayload=keep
-    linux /casper/vmlinuz boot=casper username=coreos user-fullname="CoreOS Linux" hostname=coreos nomodeset quiet splash ---
+    linux /casper/vmlinuz boot=casper username=coreos user-fullname="CoreOS Linux" hostname=coreos locales=pt_BR.UTF-8 keyboard-configuration/layoutcode=br console-setup/layoutcode=br nomodeset quiet splash ---
     initrd /casper/initrd
 }
 EOF
@@ -190,7 +190,7 @@ set timeout=5
 
 menuentry "CoreOS system Linux (Live)" {
     set gfxpayload=keep
-    linux /casper/vmlinuz boot=casper username=coreos user-fullname="CoreOS Linux" hostname=coreos iso-scan/filename=${iso_path} quiet splash ---
+    linux /casper/vmlinuz boot=casper username=coreos user-fullname="CoreOS Linux" hostname=coreos locales=pt_BR.UTF-8 keyboard-configuration/layoutcode=br console-setup/layoutcode=br iso-scan/filename=${iso_path} quiet splash ---
     initrd /casper/initrd
 }
 EOF

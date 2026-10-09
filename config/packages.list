@@ -12,6 +12,8 @@ casper
 discover
 laptop-detect
 os-prober
+keyboard-configuration
+console-setup
 
 # Otimização de Memória (Anti-OOM)
 zram-tools

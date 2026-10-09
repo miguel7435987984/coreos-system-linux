@@ -48,6 +48,37 @@ exit 0
 EOF
 chmod +x /usr/sbin/install-keymap
 
+# 1.2 Configuração Padrão do Teclado (Português Brasil - ABNT2)
+mkdir -p /etc/default /etc/X11/xorg.conf.d /etc/X11/Xsession.d
+cat << 'EOF_KBD' > /etc/default/keyboard
+XKBMODEL="pc105"
+XKBLAYOUT="br"
+XKBVARIANT="abnt2"
+XKBOPTIONS=""
+BACKSPACE="guess"
+EOF_KBD
+
+cat << 'EOF_VCONSOLE' > /etc/vconsole.conf
+KEYMAP=br-abnt2
+XKBLAYOUT=br
+XKBMODEL=pc105
+XKBVARIANT=abnt2
+EOF_VCONSOLE
+
+cat << 'EOF_XORG_KBD' > /etc/X11/xorg.conf.d/00-keyboard.conf
+Section "InputClass"
+    Identifier "system-keyboard"
+    MatchIsKeyboard "on"
+    Option "XkbLayout" "br"
+    Option "XkbModel" "pc105"
+    Option "XkbVariant" "abnt2"
+EndSection
+EOF_XORG_KBD
+
+cat << 'EOF_XSESSION' > /etc/X11/Xsession.d/99-coreos-setxkbmap
+setxkbmap -model pc105 -layout br -variant abnt2 2>/dev/null || true
+EOF_XSESSION
+
 # 2. Configuração Casper (Sessão Live)
 cat << 'EOF_CASPER' > /etc/casper.conf
 export USERNAME="coreos"
@@ -167,6 +198,29 @@ cat << 'EOF_XFCE_UI' > /etc/xdg/xfce4/xfconf/xfce-perchannel-xml/xsettings.xml
   </property>
 </channel>
 EOF_XFCE_UI
+
+# Layout de teclado em português (ABNT2) no XFCE
+cat << 'EOF_XFCE_KBD' > /etc/xdg/xfce4/xfconf/xfce-perchannel-xml/keyboard-layout.xml
+<?xml version="1.0" encoding="UTF-8"?>
+<channel name="keyboard-layout" version="1.0">
+  <property name="Default" type="empty">
+    <property name="XkbDisable" type="bool" value="false"/>
+    <property name="XkbLayout" type="string" value="br"/>
+    <property name="XkbVariant" type="string" value="abnt2"/>
+    <property name="XkbModel" type="string" value="pc105"/>
+  </property>
+</channel>
+EOF_XFCE_KBD
+
+# Autostart do layout ABNT2 na sessão gráfica do XFCE
+mkdir -p /etc/xdg/autostart
+cat << 'EOF_SETXKBMAP' > /etc/xdg/autostart/setxkbmap.desktop
+[Desktop Entry]
+Type=Application
+Name=Keyboard Layout BR
+Exec=setxkbmap -model pc105 -layout br -variant abnt2
+OnlyShowIn=XFCE;
+EOF_SETXKBMAP
 
 # Prius Terminal como emulador de terminal padrão do sistema
 update-alternatives --install /usr/bin/x-terminal-emulator x-terminal-emulator /usr/local/bin/prius 100 || true
