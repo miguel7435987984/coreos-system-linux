@@ -30,6 +30,8 @@ elif [ "$ACTION" = "remove" ] || [ "$ACTION" = "uninstall" ] || [ "$ACTION" = "p
     echo "==> [get-install] Removendo pacotes: $*..."
     apt-get remove --purge -y "$@" && apt-get autoremove -y
     exit 0
+elif [ "$ACTION" = "install" ] || [ "$ACTION" = "add" ] || [ "$ACTION" = "get" ]; then
+    shift
 fi
 
 echo "==> [get-install] Atualizando repositórios..."

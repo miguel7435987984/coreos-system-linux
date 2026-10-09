@@ -192,6 +192,7 @@ cat << 'EOF_BASH' >> /etc/bash.bashrc
 alias fastfetch='fastfetch -c /etc/fastfetch/config.jsonc'
 alias neofetch='fastfetch -c /etc/fastfetch/config.jsonc'
 alias coreos-info='fastfetch -c /etc/fastfetch/config.jsonc'
+alias get='get-install'
 
 if [ -t 1 ] && [ -x /usr/bin/fastfetch ]; then
     fastfetch -c /etc/fastfetch/config.jsonc
