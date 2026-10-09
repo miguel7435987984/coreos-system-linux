@@ -95,10 +95,35 @@ if [ -f /etc/X11/default-display-manager ]; then
     echo "/usr/sbin/lightdm" > /etc/X11/default-display-manager
 fi
 
-# 6. Instalação do Prius Terminal e Branding
+# 6. Instalação de Aplicativos Oficiais (Prius Terminal & get-install)
 if [ -d /tmp/coreos-build/apps/prius-terminal ]; then
     bash /tmp/coreos-build/apps/prius-terminal/install.sh
 fi
+
+if [ -d /tmp/coreos-build/apps/get-install ]; then
+    bash /tmp/coreos-build/apps/get-install/install.sh
+fi
+
+# Configuração do Repositório Mozilla Oficial para Firefox nativo (.deb tradicional sem Snap)
+mkdir -p /etc/apt/keyrings /etc/apt/preferences.d /etc/apt/sources.list.d
+wget -q https://packages.mozilla.org/apt/repo-signing-key.gpg -O- | tee /etc/apt/keyrings/packages.mozilla.org.asc > /dev/null || true
+
+cat << 'SOURCES' > /etc/apt/sources.list.d/mozilla.sources
+Types: deb
+URIs: https://packages.mozilla.org/apt
+Suites: mozilla
+Components: main
+Signed-By: /etc/apt/keyrings/packages.mozilla.org.asc
+SOURCES
+
+cat << 'PREF' > /etc/apt/preferences.d/mozilla
+Package: *
+Pin: origin packages.mozilla.org
+Pin-Priority: 1000
+PREF
+
+apt-get update -qq || true
+apt-get install -y firefox firefox-l10n-pt-br || true
 
 if [ -d /tmp/coreos-build/branding/icons ]; then
     mkdir -p /usr/share/pixmaps /usr/share/icons/hicolor/scalable/apps

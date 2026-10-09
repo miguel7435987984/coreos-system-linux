@@ -1,0 +1,41 @@
+#!/usr/bin/env bash
+# ==============================================================================
+# CoreOS system Linux - Gerenciador get-install Oficial
+# ==============================================================================
+
+set -e
+
+if [ "$#" -eq 0 ]; then
+    echo "CoreOS get-install"
+    echo "Uso: get-install <pacote> [pacotes...]"
+    echo "      get-install update"
+    echo "      get-install remove <pacote>"
+    echo "Exemplo: get-install firefox"
+    exit 0
+fi
+
+if [ "$EUID" -ne 0 ]; then
+    exec sudo "$0" "$@"
+fi
+
+export DEBIAN_FRONTEND=noninteractive
+
+ACTION="$1"
+if [ "$ACTION" = "update" ]; then
+    echo "==> [get-install] Atualizando repositórios e sistema..."
+    apt-get update && apt-get upgrade -y
+    exit 0
+elif [ "$ACTION" = "remove" ] || [ "$ACTION" = "uninstall" ] || [ "$ACTION" = "purge" ]; then
+    shift
+    echo "==> [get-install] Removendo pacotes: $*..."
+    apt-get remove --purge -y "$@" && apt-get autoremove -y
+    exit 0
+fi
+
+echo "==> [get-install] Atualizando repositórios..."
+apt-get update -qq
+
+echo "==> [get-install] Instalando: $*..."
+apt-get install -y "$@"
+
+echo "==> [get-install] Instalação concluída com sucesso!"
