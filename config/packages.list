@@ -54,6 +54,9 @@ gir1.2-vte-2.91
 # Rede & Conectividade
 network-manager
 network-manager-gnome
+netplan.io
+systemd-resolved
+iputils-ping
 wpasupplicant
 iw
 iproute2

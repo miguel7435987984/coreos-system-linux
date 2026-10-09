@@ -183,7 +183,54 @@ Exec=/usr/bin/VBoxClient-all
 OnlyShowIn=XFCE;
 EOF_VBOX
 
-# 8. Plymouth Boot Splash (crDroid 4 Dots + CoreOS Logo)
+# 8. Configuração de Rede (NetworkManager & Netplan para VMs e Máquinas Físicas)
+mkdir -p /etc/netplan
+cat <<'EOF' > /etc/netplan/01-network-manager-all.yaml
+network:
+  version: 2
+  renderer: NetworkManager
+EOF
+chmod 600 /etc/netplan/01-network-manager-all.yaml
+
+# Força o NetworkManager a gerenciar todas as interfaces (Ethernet, Wi-Fi, interfaces virtuais)
+mkdir -p /etc/NetworkManager/conf.d
+cat <<'EOF' > /etc/NetworkManager/conf.d/10-globally-managed-devices.conf
+[keyfile]
+unmanaged-devices=none
+EOF
+
+cat <<'EOF' > /etc/NetworkManager/NetworkManager.conf
+[main]
+plugins=ifupdown,keyfile
+dns=systemd-resolved
+
+[ifupdown]
+managed=true
+
+[device]
+wifi.scan-rand-mac-address=no
+EOF
+
+# Permissão no Polkit para controle de rede na sessão Live sem senha
+mkdir -p /etc/polkit-1/rules.d
+cat <<'EOF' > /etc/polkit-1/rules.d/99-coreos-networkmanager.rules
+polkit.addRule(function(action, subject) {
+    if (action.id.indexOf("org.freedesktop.NetworkManager.") == 0) {
+        return polkit.Result.YES;
+    }
+});
+EOF
+
+# Habilita serviços essenciais de rede
+systemctl enable NetworkManager 2>/dev/null || true
+systemctl enable systemd-resolved 2>/dev/null || true
+systemctl enable wpa_supplicant 2>/dev/null || true
+
+if [ -x "$(command -v netplan)" ]; then
+    netplan generate 2>/dev/null || true
+fi
+
+# 9. Plymouth Boot Splash (Logotipo Oficial CoreOS)
 mkdir -p /usr/share/plymouth/themes/spinner /usr/share/plymouth/themes/bgrt
 if [ -d /tmp/coreos-build/branding/plymouth/spinner ]; then
     cp -r /tmp/coreos-build/branding/plymouth/spinner/* /usr/share/plymouth/themes/spinner/ || true
