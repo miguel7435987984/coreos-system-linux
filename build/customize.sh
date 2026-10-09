@@ -61,37 +61,24 @@ PRIORITY=100
 EOF_ZRAM
 echo "    ✓ zram-tools configurado (50% de RAM compactada em swap rápido)"
 
-# 5. Configuração do Docker Nativo
-systemctl enable docker 2>/dev/null || true
-systemctl enable containerd 2>/dev/null || true
-groupadd -f docker
-usermod -aG docker coreos 2>/dev/null || true
+# 5. Configuração do LightDM (Login Automático para o Usuário Live)
+mkdir -p /etc/lightdm/lightdm.conf.d
+cat << 'EOF_LIGHTDM' > /etc/lightdm/lightdm.conf
+[Seat:*]
+autologin-guest=false
+autologin-user=coreos
+autologin-user-timeout=0
+user-session=xfce
+greeter-session=lightdm-gtk-greeter
+EOF_LIGHTDM
 
-# 6. Sessão Gráfica Minimalista: NODM + Openbox + Prius Terminal
-cat << 'EOF_NODM' > /etc/default/nodm
-NODM_ENABLED=true
-NODM_USER=coreos
-NODM_XSESSION=/etc/X11/Xsession
-NODM_X_OPTIONS="-nolisten tcp"
-NODM_MIN_SESSION_TIME=60
-EOF_NODM
-
-mkdir -p /etc/xdg/openbox
-cat << 'EOF_OPENBOX' > /etc/xdg/openbox/autostart
-# Inicia suporte a clipboard e redimensionamento no VirtualBox
-which VBoxClient-all >/dev/null 2>&1 && VBoxClient-all &
-
-# Aplica o Wallpaper oficial Wine Edition
-if [ -f /usr/share/backgrounds/coreos/coreos-default.png ]; then
-    feh --bg-fill /usr/share/backgrounds/coreos/coreos-default.png &
+# Garante que o serviço lightdm está habilitado como gerenciador padrão
+systemctl enable lightdm 2>/dev/null || true
+if [ -f /etc/X11/default-display-manager ]; then
+    echo "/usr/sbin/lightdm" > /etc/X11/default-display-manager
 fi
 
-# Inicia Prius Terminal em tela cheia / maximizado
-prius &
-EOF_OPENBOX
-chmod +x /etc/xdg/openbox/autostart
-
-# 7. Instalação do Prius Terminal e Branding
+# 6. Instalação do Prius Terminal e Branding
 if [ -d /tmp/coreos-build/apps/prius-terminal ]; then
     bash /tmp/coreos-build/apps/prius-terminal/install.sh
 fi
@@ -103,9 +90,55 @@ if [ -d /tmp/coreos-build/branding/icons ]; then
 fi
 
 if [ -d /tmp/coreos-build/branding/wallpaper ]; then
-    mkdir -p /usr/share/backgrounds/coreos
+    mkdir -p /usr/share/backgrounds/coreos /usr/share/backgrounds/xfce
     cp /tmp/coreos-build/branding/wallpaper/* /usr/share/backgrounds/coreos/ 2>/dev/null || true
+    # Substitui wallpaper padrão do XFCE pelo CoreOS Wine Edition
+    cp /usr/share/backgrounds/coreos/coreos-default.png /usr/share/backgrounds/xfce/xfce-blue.jpg 2>/dev/null || true
+    cp /usr/share/backgrounds/coreos/coreos-default.png /usr/share/backgrounds/xfce/xfce-teal.jpg 2>/dev/null || true
+    cp /usr/share/backgrounds/coreos/coreos-default.png /usr/share/backgrounds/xfce/coreos-default.png 2>/dev/null || true
 fi
+
+# 7. Configuração Padrão do XFCE (Tema Escuro, Wallpaper e Painel)
+mkdir -p /etc/xdg/xfce4/xfconf/xfce-perchannel-xml
+cat << 'EOF_XFCE_DESKTOP' > /etc/xdg/xfce4/xfconf/xfce-perchannel-xml/xfce4-desktop.xml
+<?xml version="1.0" encoding="UTF-8"?>
+<channel name="xfce4-desktop" version="1.0">
+  <property name="backdrop" type="empty">
+    <property name="screen0" type="empty">
+      <property name="monitor0" type="empty">
+        <property name="image-path" type="string" value="/usr/share/backgrounds/coreos/coreos-default.png"/>
+        <property name="last-image" type="string" value="/usr/share/backgrounds/coreos/coreos-default.png"/>
+        <property name="image-style" type="int" value="5"/>
+      </property>
+    </property>
+  </property>
+</channel>
+EOF_XFCE_DESKTOP
+
+# Tema escuro e ícones modernos por padrão no XFCE
+cat << 'EOF_XFCE_UI' > /etc/xdg/xfce4/xfconf/xfce-perchannel-xml/xsettings.xml
+<?xml version="1.0" encoding="UTF-8"?>
+<channel name="xsettings" version="1.0">
+  <property name="Net" type="empty">
+    <property name="ThemeName" type="string" value="Greybird-dark"/>
+    <property name="IconThemeName" type="string" value="Yaru-dark"/>
+  </property>
+</channel>
+EOF_XFCE_UI
+
+# Prius Terminal como emulador de terminal padrão do sistema
+update-alternatives --install /usr/bin/x-terminal-emulator x-terminal-emulator /usr/local/bin/prius 100 || true
+update-alternatives --set x-terminal-emulator /usr/local/bin/prius || true
+
+# Configura auto-início do VBoxClient no XFCE (Clipboard compartilhado e redimensionamento automático)
+mkdir -p /etc/xdg/autostart
+cat << 'EOF_VBOX' > /etc/xdg/autostart/vboxclient.desktop
+[Desktop Entry]
+Type=Application
+Name=VirtualBox Guest Services
+Exec=/usr/bin/VBoxClient-all
+OnlyShowIn=XFCE;
+EOF_VBOX
 
 # 8. Plymouth Boot Splash (crDroid 4 Dots + CoreOS Logo)
 mkdir -p /usr/share/plymouth/themes/spinner /usr/share/plymouth/themes/bgrt

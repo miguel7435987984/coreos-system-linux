@@ -1,6 +1,6 @@
 # ==============================================================================
 # CoreOS system Linux (Ubuntu 24.04 LTS Noble) - Pacotes Oficiais
-# Base Minimalista Otimizada para Containers (Docker) e Baixo Consumo de RAM
+# Base Minimalista com Desktop XFCE4 e Prius Terminal Nativo
 # ==============================================================================
 
 # Kernel & Inicialização
@@ -13,29 +13,36 @@ discover
 laptop-detect
 os-prober
 
-# Docker & Containers Nativo
-docker.io
-docker-compose-v2
-containerd
-
 # Otimização de Memória (Anti-OOM)
 zram-tools
 
-# Ambiente Gráfico Minimalista (Ultra-Leve para o Prius Terminal)
+# Ambiente Desktop XFCE4 Completo e Ultra-Leve
+xfce4
+xfce4-panel
+xfce4-session
+xfce4-settings
+xfdesktop4
+thunar
+thunar-volman
+thunar-archive-plugin
+lightdm
+lightdm-gtk-greeter
+yaru-theme-gtk
+yaru-theme-icon
+greybird-gtk-theme
+
+# Servidor Gráfico X11 & Suporte a VMs
 xserver-xorg
 xserver-xorg-core
 xserver-xorg-video-all
 x11-xserver-utils
-openbox
-nodm
-feh
-plymouth
-plymouth-themes
-
-# Suporte a Máquinas Virtuais (VirtualBox & VMware)
 virtualbox-guest-utils
 virtualbox-guest-x11
 open-vm-tools-desktop
+
+# Plymouth Boot Splash
+plymouth
+plymouth-themes
 
 # Dependências do Prius Terminal
 python3
@@ -46,12 +53,19 @@ gir1.2-vte-2.91
 
 # Rede & Conectividade
 network-manager
+network-manager-gnome
 wpasupplicant
 iw
 iproute2
 curl
 wget
 ca-certificates
+
+# Áudio Nativo (PipeWire)
+pipewire
+pipewire-pulse
+pipewire-alsa
+wireplumber
 
 # Ferramentas do Sistema & Disco
 sudo

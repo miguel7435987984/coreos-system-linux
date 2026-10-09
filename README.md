@@ -1,14 +1,14 @@
 # CoreOS system Linux (Ubuntu 24.04 LTS Noble)
 
-Sistema operacional minimalista imutável otimizado para containers Docker e baixo consumo de memória RAM.
+Sistema operacional minimalista, rápido e elegante com interface gráfica XFCE4 moderna, Prius Terminal nativo e proteção anti-OOM.
 
 ## 🚀 Recursos Principais:
 - **Base:** Ubuntu 24.04 LTS (Noble Numbat).
-- **Interface Gráfica:** Ultra-leve com Openbox + Prius Terminal (consumo em repouso: ~200MB de RAM).
-- **Docker Nativo:** Docker CE, containerd e docker-compose integrados.
-- **Proteção Anti-Crash (Anti-OOM):** `systemd-oomd` desativado, impedindo que processos e containers sejam mortos repentinamente.
-- **zram-tools Ativado:** 50% de swap comprimido em memória RAM com LZ4 para velocidade máxima.
-- **Drag and Drop Nativo:** Suporte completo para arrastar pastas e arquivos diretamente para o Prius Terminal.
+- **Interface Gráfica:** XFCE4 Moderno com LightDM autologin (consumo em repouso: ~350MB de RAM).
+- **Prius Terminal:** Terminal padrão do sistema com suporte nativo a Drag and Drop.
+- **Proteção Anti-Crash (Anti-OOM):** `systemd-oomd` desativado e `zram-tools` ativado (50% de swap comprimido LZ4).
+- **Visual Wine Edition:** Wallpaper exclusivo e tema escuro moderno integrado.
+- **Boot Splash Plymouth:** Animação fluída neon de 60 quadros com logotipo CoreOS.
 
 ## 🛠️ Como Compilar a ISO:
 ```bash

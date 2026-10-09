@@ -171,7 +171,7 @@ if [ -z "$root" -o ! -f "($root)/casper/vmlinuz" ]; then
     fi
 fi
 
-menuentry "Iniciar CoreOS system Linux (Docker + Prius Terminal)" {
+menuentry "Experimentar ou Instalar o CoreOS system Linux (XFCE4 + Prius Terminal)" {
     set gfxpayload=keep
     linux /casper/vmlinuz boot=casper username=coreos user-fullname="CoreOS Linux" hostname=coreos quiet splash ---
     initrd /casper/initrd
