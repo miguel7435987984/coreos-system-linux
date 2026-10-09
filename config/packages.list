@@ -67,9 +67,6 @@ pipewire-pulse
 pipewire-alsa
 wireplumber
 
-# Informações do Sistema & Fastfetch
-fastfetch
-
 # Ferramentas do Sistema & Disco
 sudo
 polkitd

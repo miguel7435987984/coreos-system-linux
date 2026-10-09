@@ -147,7 +147,15 @@ EOF_XFCE_UI
 update-alternatives --install /usr/bin/x-terminal-emulator x-terminal-emulator /usr/local/bin/prius 100 || true
 update-alternatives --set x-terminal-emulator /usr/local/bin/prius || true
 
-# 7.1 Configuração do Fastfetch (Wine Edition)
+# 7.1 Instalação e Configuração do Fastfetch Oficial (Wine Edition)
+if ! command -v fastfetch &>/dev/null; then
+    wget -q "https://github.com/fastfetch-cli/fastfetch/releases/download/2.38.0/fastfetch-linux-amd64.deb" -O /tmp/fastfetch.deb 2>/dev/null || true
+    if [ -f /tmp/fastfetch.deb ]; then
+        dpkg -i /tmp/fastfetch.deb || apt-get install -fy || true
+        rm -f /tmp/fastfetch.deb
+    fi
+fi
+
 mkdir -p /etc/fastfetch
 if [ -d /tmp/coreos-build/config/fastfetch ]; then
     cp -r /tmp/coreos-build/config/fastfetch/* /etc/fastfetch/ || true
